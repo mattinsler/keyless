@@ -1,0 +1,8 @@
+{
+  "name": "keyless-example",
+  "dependencies": {
+    "passport-local": "~0.1.6",
+    "express": "~3.2.0",
+    "redis": "~0.8.3"
+  }
+}

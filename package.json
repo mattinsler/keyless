@@ -21,35 +21,22 @@
       "url": "https://github.com/mattinsler/keyless/blob/master/LICENSE-MIT"
     }
   ],
-  "main": "lib/keyless",
+  "main": "dist/keyless",
   "engines": {
     "node": ">= 0.8.0"
   },
-  "scripts": {
-    "start": "axle caboose server"
-  },
   "dependencies": {
-    "ejs": "0.8.3",
-    "caboose-model": "0.1.18",
-    "bcrypt": "~0.7.5",
-    "passport": "~0.1.16",
-    "passport-local": "~0.1.6",
     "betturl": "~0.2.0",
-    "underscore": "~1.4.4",
-    "caboose-redis": "0.0.2",
+    "async": "~0.2.7",
+    "passport": "~0.1.16",
+    "walkabout": "~0.1.4",
     "express": "~3.2.0",
-    "request": "~2.16.6",
-    "connect-redis": "~1.4.5"
+    "redis": "~0.8.3"
   },
-  "keywords": [],
-  "axle-domains": [
-    "keyless.dev"
-  ],
-  "axle_domains": [
-    "keyless.dev"
-  ],
-  "caboose-plugins": [
-    "caboose-model",
-    "caboose-redis"
-  ]
+  "devDependencies": {
+    "mocha": "~1.7.0",
+    "grunt": "~0.3.15",
+    "grunt-contrib": "~0.3.0"
+  },
+  "keywords": []
 }
