@@ -1,7 +1,7 @@
 {
   "name": "keyless",
   "description": "Keyless SSO Server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/mattinsler/keyless",
   "author": {
     "name": "Matt Insler",
@@ -26,12 +26,13 @@
     "node": ">= 0.8.0"
   },
   "dependencies": {
-    "betturl": "~0.2.0",
+    "betturl": "~0.2.2",
     "async": "~0.2.7",
     "passport": "~0.1.16",
     "walkabout": "~0.1.4",
     "express": "~3.2.0",
-    "redis": "~0.8.3"
+    "redis": "~0.8.3",
+    "passport-local": "~0.1.6"
   },
   "devDependencies": {
     "mocha": "~1.7.0",
