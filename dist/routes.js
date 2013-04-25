@@ -1,5 +1,5 @@
 (function() {
-  var betturl, utils;
+  var betturl, inflate_query_object, utils;
 
   betturl = require('betturl');
 
@@ -51,6 +51,17 @@
     return next();
   };
 
+  inflate_query_object = function(query) {
+    var k, v;
+    for (k in query) {
+      v = query[k];
+      if (typeof v === 'string' && /^\{.*\}$/.test(v)) {
+        query[k] = JSON.parse(v);
+      }
+    }
+    return query;
+  };
+
   exports.validate_ticket = function(keyless, req, res, next) {
     if (!utils.authorize_shared_key(keyless, req, res, next)) {
       return;
@@ -65,7 +76,7 @@
       if (user_id == null) {
         return utils.send_json(res, 401, 'Unauthorized');
       }
-      return keyless.config.token_store.create(user_id, req.query, function(err, token) {
+      return keyless.config.token_store.create(user_id, inflate_query_object(req.query), function(err, token) {
         if (err != null) {
           return next(err);
         }
@@ -94,13 +105,16 @@
         if (err != null) {
           return next(err);
         }
-        return keyless.authorize_user(user, token_data, function(err, response) {
+        return keyless.authorize_user(user, inflate_query_object(req.query).authorization_data, function(err, response) {
           if (err != null) {
             return next(err);
           }
-          return utils.send_json(res, 200, {
-            user: user
-          });
+          if (response === true) {
+            return utils.send_json(res, 200, {
+              user: user
+            });
+          }
+          return utils.send_json(res, 403, typeof response === 'string' ? response : 'Token authorization failed');
         });
       });
     });

@@ -1,7 +1,7 @@
 {
   "name": "keyless",
   "description": "Keyless SSO Server",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://github.com/mattinsler/keyless",
   "author": {
     "name": "Matt Insler",
