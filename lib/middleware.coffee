@@ -8,23 +8,24 @@ exports.fix_request = (keyless) ->
     req.full_url = req.resolved_protocol + '://' + req.get('host') + req.url
     next()
 
-exports.cookie_parser = (keyless) ->
-  express.cookieParser()
-
-exports.session_parser = (keyless) ->
-  express.session(
-    key: keyless.config.session_key
-    secret: keyless.config.session_secret
-    store: keyless.config.session_store
-    cookie:
-      signed: true
-      httpOnly: true
-      maxAge: 1000 * 60 * 60 * 24
-      secure: keyless.config.force_ssl
-  )
+exports.keyless_cookie = require './keyless_cookie'
 
 exports.passport_initialize = (keyless) ->
-  keyless.passport.initialize()
+  # keyless.passport.initialize()
+  (req, res, next) ->
+    passport = keyless.passport
+    req._passport =
+      instance: passport
+    
+    if req.keyless.session and req.keyless.session[passport._key]
+      req._passport.session = req.keyless.session[passport._key]
+    else if req.keyless.session
+      req.keyless.session[passport._key] = {}
+      req._passport.session = req.keyless.session[passport._key]
+    else
+      req._passport.session = {}
+    
+    next()
 
 exports.passport_session = (keyless) ->
   keyless.passport.session()

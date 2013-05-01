@@ -31,7 +31,7 @@ class MemoryTokenStore
   
   remove_tokens_for_user: (user_id, callback) ->
     Object.keys(@tokens).filter (k) =>
-      @tokens[k].user_id is user_id
+      @tokens[k].user_id.toString() is user_id.toString()
     .forEach (k) =>
       delete @tokens[k]
     callback()

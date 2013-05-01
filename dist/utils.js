@@ -37,7 +37,7 @@
     if (parsed.port == null) {
       delete parsed.port;
     }
-    parsed.query.ticket = ticket;
+    parsed.query.auth_ticket = ticket;
     matches = keyless.config.authorized_callback_domains.filter(function(matcher) {
       if (typeof matcher === 'string') {
         return matcher === parsed.host;
@@ -75,8 +75,8 @@
 
   exports.create_and_send_ticket = function(keyless, req, res, next) {
     var callback;
-    callback = req.session.callback;
-    delete req.session.callback;
+    callback = req.keyless.session.callback;
+    delete req.keyless.session.callback;
     if (keyless.config.on_login != null) {
       if (callback == null) {
         callback = keyless.config.on_login;

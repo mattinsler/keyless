@@ -15,26 +15,25 @@
     };
   };
 
-  exports.cookie_parser = function(keyless) {
-    return express.cookieParser();
-  };
-
-  exports.session_parser = function(keyless) {
-    return express.session({
-      key: keyless.config.session_key,
-      secret: keyless.config.session_secret,
-      store: keyless.config.session_store,
-      cookie: {
-        signed: true,
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24,
-        secure: keyless.config.force_ssl
-      }
-    });
-  };
+  exports.keyless_cookie = require('./keyless_cookie');
 
   exports.passport_initialize = function(keyless) {
-    return keyless.passport.initialize();
+    return function(req, res, next) {
+      var passport;
+      passport = keyless.passport;
+      req._passport = {
+        instance: passport
+      };
+      if (req.keyless.session && req.keyless.session[passport._key]) {
+        req._passport.session = req.keyless.session[passport._key];
+      } else if (req.keyless.session) {
+        req.keyless.session[passport._key] = {};
+        req._passport.session = req.keyless.session[passport._key];
+      } else {
+        req._passport.session = {};
+      }
+      return next();
+    };
   };
 
   exports.passport_session = function(keyless) {

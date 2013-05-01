@@ -10,8 +10,8 @@
     if (utils.upgrade_to_ssl(keyless, req, res, next)) {
       return;
     }
-    if ((req.query.callback != null) && !(req.session.callback != null)) {
-      req.session.callback = req.query.callback;
+    if (req.query.callback != null) {
+      req.keyless.session.callback = req.query.callback;
     }
     if (req.isAuthenticated()) {
       return utils.create_and_send_ticket(keyless, req, res, next);
@@ -21,8 +21,8 @@
       parsed = betturl.parse(prefix + req.url);
       parsed.path = keyless.config.defer_login_url;
       req.url = betturl.format(parsed).slice(prefix.length);
-      req.keyless.error = req.session.keyless_error;
-      delete req.session.keyless_error;
+      req.keyless.error = req.keyless.session.error;
+      delete req.keyless.session.error;
       return next();
     }
     return utils.send_html(res, 200, keyless.config.login_html);
@@ -34,7 +34,7 @@
         return next(err);
       }
       if (!user) {
-        req.session.keyless_error = 'User could not be authenticated';
+        req.keyless.session.error = 'User could not be authenticated';
         return utils.redirect(res, keyless.config.url.login);
       }
       return utils.login_user(keyless, req, res, next, user);

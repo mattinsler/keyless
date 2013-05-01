@@ -64,7 +64,7 @@
         return done(null, true);
       };
       this.routes = routes;
-      this.middleware_stack = [middleware.fix_request(this), middleware.cookie_parser(this), middleware.session_parser(this), middleware.passport_initialize(this), middleware.passport_session(this), middleware.router(this)];
+      this.middleware_stack = [middleware.fix_request(this), middleware.keyless_cookie(this), middleware.passport_initialize(this), middleware.passport_session(this), middleware.router(this)];
     }
 
     Keyless.prototype.middleware = function() {

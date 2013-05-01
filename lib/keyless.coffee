@@ -40,8 +40,7 @@ class Keyless
     
     @middleware_stack = [
       middleware.fix_request(@)
-      middleware.cookie_parser(@)
-      middleware.session_parser(@)
+      middleware.keyless_cookie(@)
       middleware.passport_initialize(@)
       middleware.passport_session(@)
       middleware.router(@)

@@ -4,8 +4,8 @@ utils = require './utils'
 
 exports.get_login = (keyless, req, res, next) ->
   return if utils.upgrade_to_ssl(keyless, req, res, next)
-
-  req.session.callback = req.query.callback if req.query.callback? and not req.session.callback?
+  
+  req.keyless.session.callback = req.query.callback if req.query.callback?
   return utils.create_and_send_ticket(keyless, req, res, next) if req.isAuthenticated()
 
   if keyless.config.defer_login_url?
@@ -14,8 +14,8 @@ exports.get_login = (keyless, req, res, next) ->
     parsed.path = keyless.config.defer_login_url
     req.url = betturl.format(parsed).slice(prefix.length)
 
-    req.keyless.error = req.session.keyless_error
-    delete req.session.keyless_error
+    req.keyless.error = req.keyless.session.error
+    delete req.keyless.session.error
     return next()
 
   utils.send_html(res, 200, keyless.config.login_html)
@@ -24,7 +24,7 @@ exports.post_login = (keyless, req, res, next) ->
   keyless.passport.authenticate('local', (err, user) ->
     return next(err) if err?
     unless user
-      req.session.keyless_error = 'User could not be authenticated'
+      req.keyless.session.error = 'User could not be authenticated'
       return utils.redirect(res, keyless.config.url.login)
     utils.login_user(keyless, req, res, next, user)
   )(req, res, next)

@@ -41,7 +41,7 @@
     MemoryTokenStore.prototype.remove_tokens_for_user = function(user_id, callback) {
       var _this = this;
       Object.keys(this.tokens).filter(function(k) {
-        return _this.tokens[k].user_id === user_id;
+        return _this.tokens[k].user_id.toString() === user_id.toString();
       }).forEach(function(k) {
         return delete _this.tokens[k];
       });
