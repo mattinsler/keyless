@@ -23,6 +23,7 @@ module.exports = (keyless) ->
     req.keyless.session.cookie = new Cookie(
       signed: true
       httpOnly: true
+      path: '/'
       maxAge: 1000 * 60 * 60 * 24
       secure: keyless.config.force_ssl
     )
@@ -34,7 +35,6 @@ module.exports = (keyless) ->
         return
       
       delete req.keyless.session.cookie
-      # delete req.keyless.session[keyless.passport._key]
       
       json = 'j:' + JSON.stringify(req.keyless.session)
       cookie_value = cookie.serialize(keyless.config.session_key, 's:' + signature.sign(json, keyless.config.session_secret))
