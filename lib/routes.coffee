@@ -25,6 +25,7 @@ exports.post_login = (keyless, req, res, next) ->
     return next(err) if err?
     unless user
       req.keyless.session.error = 'User could not be authenticated'
+      return utils.send_json(res, 401, {error: req.keyless.session.error}) if req.format is 'json'
       return utils.redirect(res, keyless.config.url.login)
     utils.login_user(keyless, req, res, next, user)
   )(req, res, next)

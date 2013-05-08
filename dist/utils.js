@@ -37,7 +37,9 @@
     if (parsed.port == null) {
       delete parsed.port;
     }
-    parsed.query.auth_ticket = ticket;
+    if (ticket != null) {
+      parsed.query.auth_ticket = ticket;
+    }
     matches = keyless.config.authorized_callback_domains.filter(function(matcher) {
       if (typeof matcher === 'string') {
         return matcher === parsed.host;
@@ -81,6 +83,11 @@
       if (callback == null) {
         callback = keyless.config.on_login;
       }
+    }
+    if (req.format === 'json') {
+      return exports.send_json(res, 200, {
+        redirect: exports.create_callback_url(keyless, req, callback)
+      });
     }
     return keyless.config.ticket_store.create(req._passport.session.user, function(err, ticket) {
       if (err != null) {

@@ -3,7 +3,11 @@ betturl = require 'betturl'
 
 exports.fix_request = (keyless) ->
   (req, res, next) ->
-    req.query = betturl.parse(req.url).query
+    parsed = betturl.parse(req.url)
+    req.query = parsed.query
+    req.path = parsed.path
+    req.format = 'json' if /\.json$/.test(req.path) or req.headers.accept is 'application/json'
+    req.format ?= 'html'
     req.resolved_protocol = req.get('x-forwarded-proto') ? req.protocol
     req.full_url = req.resolved_protocol + '://' + req.get('host') + req.url
     next()
@@ -34,6 +38,7 @@ exports.router = (keyless) ->
   routes = {}
   routes['get '  + keyless.config.url.login]    = keyless.routes.get_login
   routes['post ' + keyless.config.url.login]    = keyless.routes.post_login
+  routes['post ' + keyless.config.url.login + '.json']    = keyless.routes.post_login
   routes['get '  + keyless.config.url.logout]   = keyless.routes.logout
   routes['get '  + keyless.config.url.validate] = keyless.routes.validate
   

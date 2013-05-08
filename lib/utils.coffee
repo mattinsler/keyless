@@ -28,7 +28,7 @@ exports.create_callback_url = (keyless, req, url, ticket) ->
   parsed.protocol ?= req.resolved_protocol
   [parsed.host, parsed.port] = req.get('host').split(':') unless parsed.host?
   delete parsed.port unless parsed.port?
-  parsed.query.auth_ticket = ticket
+  parsed.query.auth_ticket = ticket if ticket?
 
   matches = keyless.config.authorized_callback_domains.filter (matcher) ->
     return matcher is parsed.host if typeof matcher is 'string'
@@ -53,7 +53,9 @@ exports.create_and_send_ticket = (keyless, req, res, next) ->
   callback = req.keyless.session.callback
   delete req.keyless.session.callback
   callback ?= keyless.config.on_login if keyless.config.on_login?
-
+  
+  return exports.send_json(res, 200, {redirect: exports.create_callback_url(keyless, req, callback)}) if req.format is 'json'
+  
   keyless.config.ticket_store.create req._passport.session.user, (err, ticket) ->
     return next(err) if err?
 

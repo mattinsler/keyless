@@ -35,6 +35,11 @@
       }
       if (!user) {
         req.keyless.session.error = 'User could not be authenticated';
+        if (req.format === 'json') {
+          return utils.send_json(res, 401, {
+            error: req.keyless.session.error
+          });
+        }
         return utils.redirect(res, keyless.config.url.login);
       }
       return utils.login_user(keyless, req, res, next, user);
