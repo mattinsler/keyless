@@ -64,14 +64,21 @@
         return done(null, true);
       };
       this.routes = routes;
-      this.middleware_stack = [middleware.fix_request(this), middleware.keyless_cookie(this), middleware.passport_initialize(this), middleware.passport_session(this), middleware.router(this)];
+      this.middleware_stack = [middleware.fix_request(this), middleware.keyless_cookie(this), middleware.keyless_user(this), middleware.router(this)];
     }
 
     Keyless.prototype.middleware = function() {
       var _this = this;
       return function(req, res, next) {
-        req.keyless = {};
+        req.keyless = {
+          context: {
+            keyless: _this,
+            req: req,
+            res: res
+          }
+        };
         return async.eachSeries(_this.middleware_stack, function(layer, cb) {
+          req.keyless.context.next = cb;
           return layer(req, res, cb);
         }, next);
       };

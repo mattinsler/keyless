@@ -7,10 +7,11 @@
 
     function MemoryTokenStore() {
       this.tokens = {};
+      this.tokens_by_data = {};
     }
 
     MemoryTokenStore.prototype.create = function(user_id, opts, callback) {
-      var hash, key, token_data;
+      var hash, key, token_data, token_data_str;
       if (typeof opts === 'function') {
         callback = opts;
         opts = {};
@@ -19,11 +20,16 @@
         user_id: user_id,
         opts: opts
       };
+      token_data_str = JSON.stringify(token_data);
+      if (this.tokens_by_data[token_data_str] != null) {
+        return callback(null, this.tokens_by_data[token_data_str]);
+      }
       hash = crypto.createHash('sha256');
       hash.update(crypto.randomBytes(16).toString('hex'));
-      hash.update(JSON.stringify(token_data));
+      hash.update(token_data_str);
       key = hash.digest('hex');
       this.tokens[key] = token_data;
+      this.tokens_by_data[token_data_str] = key;
       return callback(null, key);
     };
 
@@ -34,7 +40,10 @@
     };
 
     MemoryTokenStore.prototype.remove_token = function(token, callback) {
+      var token_data_str;
+      token_data_str = JSON.stringify(this.tokens[token]);
       delete this.tokens[token];
+      delete this.tokens_by_data[token_data_str];
       return callback();
     };
 
@@ -43,7 +52,7 @@
       Object.keys(this.tokens).filter(function(k) {
         return _this.tokens[k].user_id.toString() === user_id.toString();
       }).forEach(function(k) {
-        return delete _this.tokens[k];
+        return _this.remove_token(k, function() {});
       });
       return callback();
     };

@@ -7,14 +7,14 @@
 
   exports.get_login = function(keyless, req, res, next) {
     var parsed, prefix;
-    if (utils.upgrade_to_ssl(keyless, req, res, next)) {
+    if (utils.upgrade_to_ssl(req.keyless.context)) {
       return;
     }
     if (req.query.callback != null) {
       req.keyless.session.callback = req.query.callback;
     }
-    if (req.isAuthenticated()) {
-      return utils.create_and_send_ticket(keyless, req, res, next);
+    if (req.keyless.user != null) {
+      return utils.create_and_send_ticket(req.keyless.context);
     }
     if (keyless.config.defer_login_url != null) {
       prefix = req.resolved_protocol + '://' + req.get('host');
@@ -25,7 +25,7 @@
       delete req.keyless.session.error;
       return next();
     }
-    return utils.send_html(res, 200, keyless.config.login_html);
+    return utils.send_html(req.keyless.context, 200, keyless.config.login_html);
   };
 
   exports.post_login = function(keyless, req, res, next) {
@@ -36,13 +36,18 @@
       if (!user) {
         req.keyless.session.error = 'User could not be authenticated';
         if (req.format === 'json') {
-          return utils.send_json(res, 401, {
+          return utils.send_json(req.keyless.context, 401, {
             error: req.keyless.session.error
           });
         }
-        return utils.redirect(res, keyless.config.url.login);
+        return utils.redirect(req.keyless.context, keyless.config.url.login);
       }
-      return utils.login_user(keyless, req, res, next, user);
+      return utils.login_user(req.keyless.context, user, function(err) {
+        if (err != null) {
+          return next(err);
+        }
+        return utils.create_and_send_ticket(req.keyless.context);
+      });
     })(req, res, next);
   };
 
@@ -68,24 +73,25 @@
   };
 
   exports.validate_ticket = function(keyless, req, res, next) {
-    if (!utils.authorize_shared_key(keyless, req, res, next)) {
+    if (!utils.authorize_shared_key(req.keyless.context)) {
       return;
     }
     if (req.query.ticket == null) {
       return next(new Error('Must provide a ticket to validate'));
     }
+    console.log(keyless.config.ticket_store);
     return keyless.config.ticket_store.get(req.query.ticket, function(err, user_id) {
       if (err != null) {
         return next(err);
       }
       if (user_id == null) {
-        return utils.send_json(res, 401, 'Unauthorized');
+        return utils.send_json(req.keyless.context, 401, 'Unauthorized');
       }
       return keyless.config.token_store.create(user_id, inflate_query_object(req.query), function(err, token) {
         if (err != null) {
           return next(err);
         }
-        return utils.send_json(res, 200, {
+        return utils.send_json(req.keyless.context, 200, {
           token: token
         });
       });
@@ -93,7 +99,7 @@
   };
 
   exports.validate_token = function(keyless, req, res, next) {
-    if (!utils.authorize_shared_key(keyless, req, res, next)) {
+    if (!utils.authorize_shared_key(req.keyless.context)) {
       return;
     }
     if (req.query.token == null) {
@@ -104,7 +110,7 @@
         return next(err);
       }
       if (token_data == null) {
-        return utils.send_json(res, 401, 'Unauthorized');
+        return utils.send_json(req.keyless.context, 401, 'Unauthorized');
       }
       return keyless.passport.deserializeUser(token_data.user_id, function(err, user) {
         if (err != null) {
@@ -115,11 +121,11 @@
             return next(err);
           }
           if (response === true) {
-            return utils.send_json(res, 200, {
+            return utils.send_json(req.keyless.context, 200, {
               user: user
             });
           }
-          return utils.send_json(res, 403, typeof response === 'string' ? response : 'Token authorization failed');
+          return utils.send_json(req.keyless.context, 403, typeof response === 'string' ? response : 'Token authorization failed');
         });
       });
     });
@@ -129,15 +135,15 @@
     var done;
     done = function() {
       if (req.query.callback != null) {
-        return utils.redirect(res, decodeURIComponent(req.query.callback));
+        return utils.redirect(req.keyless.context, decodeURIComponent(req.query.callback));
       }
-      return utils.redirect(res, keyless.config.url.login);
+      return utils.redirect(req.keyless.context, keyless.config.url.login);
     };
-    if (!req.isAuthenticated()) {
+    if (req.keyless.user == null) {
       return done();
     }
-    return keyless.passport.serializeUser(req.user, function(err, user_id) {
-      req.logOut();
+    return keyless.passport.serializeUser(req.keyless.user, function(err, user_id) {
+      utils.logout_user(req.keyless.context);
       if (err != null) {
         return next(err);
       }

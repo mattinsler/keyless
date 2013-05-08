@@ -41,14 +41,20 @@ class Keyless
     @middleware_stack = [
       middleware.fix_request(@)
       middleware.keyless_cookie(@)
-      middleware.passport_initialize(@)
-      middleware.passport_session(@)
+      middleware.keyless_user(@)
+      # middleware.passport_initialize(@)
+      # middleware.passport_session(@)
       middleware.router(@)
     ]
   
   middleware: ->
     (req, res, next) =>
-      req.keyless = {}
+      req.keyless =
+        context:
+          keyless: @
+          req: req
+          res: res
       async.eachSeries @middleware_stack, (layer, cb) ->
+        req.keyless.context.next = cb
         layer(req, res, cb)
       , next

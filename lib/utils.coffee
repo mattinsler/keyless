@@ -2,35 +2,35 @@ betturl = require 'betturl'
 
 # Response Helpers
 
-exports.send = (res, statusCode, data) ->
-  res.writeHead(statusCode,
+exports.send = (context, statusCode, data) ->
+  context.res.writeHead(statusCode,
     'Content-Length': Buffer.byteLength(data)
   )
-  res.end(data)
+  context.res.end(data)
 
-exports.send_html = (res, statusCode, data) ->
-  res.setHeader('Content-Type', 'text/html; charset=utf-8')
-  exports.send(res, statusCode, data)
+exports.send_html = (context, statusCode, data) ->
+  context.res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  exports.send(context, statusCode, data)
 
-exports.send_json = (res, statusCode, data) ->
-  res.setHeader('Content-Type', 'application/json')
-  exports.send(res, statusCode, JSON.stringify(data))
+exports.send_json = (context, statusCode, data) ->
+  context.res.setHeader('Content-Type', 'application/json')
+  exports.send(context, statusCode, JSON.stringify(data))
 
-exports.redirect = (res, to) ->
-  res.setHeader('Location', to)
-  exports.send(res, 302, '')
+exports.redirect = (context, to) ->
+  context.res.setHeader('Location', to)
+  exports.send(context, 302, '')
 
 
 # Route Utilities
 
-exports.create_callback_url = (keyless, req, url, ticket) ->
+exports.create_callback_url = (context, url, ticket) ->
   parsed = betturl.parse(url)
-  parsed.protocol ?= req.resolved_protocol
-  [parsed.host, parsed.port] = req.get('host').split(':') unless parsed.host?
+  parsed.protocol ?= context.req.resolved_protocol
+  [parsed.host, parsed.port] = context.req.get('host').split(':') unless parsed.host?
   delete parsed.port unless parsed.port?
   parsed.query.auth_ticket = ticket if ticket?
 
-  matches = keyless.config.authorized_callback_domains.filter (matcher) ->
+  matches = context.keyless.config.authorized_callback_domains.filter (matcher) ->
     return matcher is parsed.host if typeof matcher is 'string'
     return matcher.test(parsed.host) if matcher.test? and typeof matcher.test is 'function'
     false
@@ -38,54 +38,54 @@ exports.create_callback_url = (keyless, req, url, ticket) ->
   throw new Error('Unauthorized callback domain') if matches.length is 0
   betturl.format(parsed)
 
-exports.upgrade_to_ssl = (keyless, req, res, next) ->
-  return false unless keyless.config.force_ssl is true
-  return false if req.resolved_protocol is 'https'
-  exports.redirect(res, 'https://' + req.get('host') + req.url)
+exports.upgrade_to_ssl = (context) ->
+  return false unless context.keyless.config.force_ssl is true
+  return false if context.req.resolved_protocol is 'https'
+  exports.redirect(context, 'https://' + context.req.get('host') + context.req.url)
   true
 
-exports.login_user = (keyless, req, res, next, user) ->
-  req.logIn user, (err) ->
-    return next(err) if err?
-    exports.create_and_send_ticket(keyless, req, res, next)
-
-exports.create_and_send_ticket = (keyless, req, res, next) ->
-  callback = req.keyless.session.callback
-  delete req.keyless.session.callback
-  callback ?= keyless.config.on_login if keyless.config.on_login?
+exports.login_user = (context, user, callback) ->
+  console.log 'KEYLESS: login_user'
   
-  return exports.send_json(res, 200, {redirect: exports.create_callback_url(keyless, req, callback)}) if req.format is 'json'
+  if context.req.keyless.session.token?
+    context.req.keyless.user = user
+    return callback()
   
-  keyless.config.ticket_store.create req._passport.session.user, (err, ticket) ->
-    return next(err) if err?
+  context.keyless.passport.serializeUser user, (err, id) ->
+    return callback(err) if err?
+    
+    context.keyless.config.token_store.create id, {type: 'web'}, (err, token) ->
+      return callback(err) if err?
+      
+      context.req.keyless.user = user
+      context.req.keyless.session.token = token
+      callback()
 
+exports.logout_user = (context) ->
+  context.req.keyless.user = null
+  delete context.req.keyless.session.token
+
+exports.create_and_send_ticket = (context) ->
+  console.log 'KEYLESS: create_and_send_ticket'
+  
+  callback = context.req.keyless.session.callback
+  delete context.req.keyless.session.callback
+  callback ?= context.keyless.config.on_login if context.keyless.config.on_login?
+  
+  return exports.send_json(context, 200, {redirect: exports.create_callback_url(context, callback)}) if context.req.format is 'json'
+  
+  context.keyless.config.ticket_store.create context.req.keyless.session.user, (err, ticket) ->
+    return context.next(err) if err?
+    
     try
-      callback = exports.create_callback_url(keyless, req, callback, ticket)
+      callback = exports.create_callback_url(context, callback, ticket)
     catch err
-      req.logOut()
-      return exports.send_json(res, 403, err.message)
-    exports.redirect(res, callback)
+      exports.logout_user(context)
+      return exports.send_json(context, 403, err.message)
+    exports.redirect(context, callback)
 
-exports.authorize_shared_key = (keyless, req, res, next) ->
-  shared_key = req.headers[keyless.config.shared_key_header]
-  return true if shared_key is keyless.config.shared_key
-  exports.send_json(res, 401, 'Unauthorized')
+exports.authorize_shared_key = (context) ->
+  shared_key = context.req.headers[context.keyless.config.shared_key_header]
+  return true if shared_key is context.keyless.config.shared_key
+  exports.send_json(context, 401, 'Unauthorized')
   false
-# 
-# exports.authorize_user = (keyless, user, token, done) ->
-#   return @_authorizers.push(user) if typeof user is 'function'
-# 
-#   stack = @_authorizers
-#   pass = (i, err, obj) ->
-#     err = undefined if err is 'pass'
-#     return done(err, obj) if err or obj or obj is 0
-# 
-#     layer = stack[i]
-#     return done(new Error('failed to authorize')) unless layer
-# 
-#     try
-#       layer(user, token, (e, o) -> pass(i + 1, e, o))
-#     catch e
-#       done(e)
-# 
-#   pass(0)

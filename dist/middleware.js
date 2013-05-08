@@ -1,9 +1,11 @@
 (function() {
-  var betturl, express;
+  var betturl, express, utils;
 
   express = require('express');
 
   betturl = require('betturl');
+
+  utils = require('./utils');
 
   exports.fix_request = function(keyless) {
     return function(req, res, next) {
@@ -25,27 +27,44 @@
 
   exports.keyless_cookie = require('./keyless_cookie');
 
-  exports.passport_initialize = function(keyless) {
+  exports.keyless_user = function(keyless) {
     return function(req, res, next) {
-      var passport;
-      passport = keyless.passport;
-      req._passport = {
-        instance: passport
-      };
-      if (req.keyless.session && req.keyless.session[passport._key]) {
-        req._passport.session = req.keyless.session[passport._key];
-      } else if (req.keyless.session) {
-        req.keyless.session[passport._key] = {};
-        req._passport.session = req.keyless.session[passport._key];
-      } else {
-        req._passport.session = {};
+      var invalid_token, _ref, _ref1;
+      console.log('KEYLESS: ' + req.method + ' ' + req.url);
+      console.log('KEYLESS: ' + require('util').inspect(require('underscore')(req.keyless.session).omit('cookie')));
+      if (((_ref = req.keyless.session) != null ? _ref.passport : void 0) != null) {
+        delete req.keyless.session.passport;
       }
-      return next();
+      if (((_ref1 = req.keyless.session) != null ? _ref1.token : void 0) == null) {
+        return next();
+      }
+      console.log('KEYLESS: CHECKING TOKEN');
+      invalid_token = function(err) {
+        delete req.keyless.session.token;
+        return next(err);
+      };
+      return keyless.config.token_store.get(req.keyless.session.token, function(err, token_data) {
+        if (err != null) {
+          return invalid_token(err);
+        }
+        if (token_data == null) {
+          return invalid_token();
+        }
+        console.log('KEYLESS: TOKEN DATA');
+        console.log(token_data);
+        return keyless.passport.deserializeUser(token_data.user_id, function(err, user) {
+          if (err != null) {
+            return invalid_token(err);
+          }
+          return utils.login_user(req.keyless.context, user, function(err) {
+            if (err != null) {
+              return invalid_token(err);
+            }
+            return next();
+          });
+        });
+      });
     };
-  };
-
-  exports.passport_session = function(keyless) {
-    return keyless.passport.session();
   };
 
   exports.router = function(keyless) {

@@ -33,6 +33,7 @@
       req.keyless.session.cookie = new Cookie({
         signed: true,
         httpOnly: true,
+        path: '/',
         maxAge: 1000 * 60 * 60 * 24,
         secure: keyless.config.force_ssl
       });
