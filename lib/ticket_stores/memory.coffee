@@ -5,7 +5,10 @@ class MemoryTicketStore
     @tickets = {}
     
   create: (user_id, callback) ->
+    # console.log arguments
     key = crypto.randomBytes(16).toString('hex')
+    
+    # console.log 'CREATING TICKET: ' + key + ' - ' + user_id
     
     @tickets[key] = user_id
     callback(null, key)

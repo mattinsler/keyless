@@ -24,8 +24,8 @@ exports.post_login = (keyless, req, res, next) ->
   keyless.passport.authenticate('local', (err, user) ->
     return next(err) if err?
     unless user
+      return utils.send_json(req.keyless.context, 401, {error: 'User could not be authenticated'}) if req.format is 'json'
       req.keyless.session.error = 'User could not be authenticated'
-      return utils.send_json(req.keyless.context, 401, {error: req.keyless.session.error}) if req.format is 'json'
       return utils.redirect(req.keyless.context, keyless.config.url.login)
     utils.login_user req.keyless.context, user, (err) ->
       return next(err) if err?
@@ -46,7 +46,7 @@ exports.validate_ticket = (keyless, req, res, next) ->
   return unless utils.authorize_shared_key(req.keyless.context)
   return next(new Error('Must provide a ticket to validate')) unless req.query.ticket?
   
-  console.log keyless.config.ticket_store
+  # console.log keyless.config.ticket_store
   keyless.config.ticket_store.get req.query.ticket, (err, user_id) ->
     return next(err) if err?
     return utils.send_json(req.keyless.context, 401, 'Unauthorized') unless user_id?

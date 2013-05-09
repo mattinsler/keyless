@@ -34,12 +34,12 @@
         return next(err);
       }
       if (!user) {
-        req.keyless.session.error = 'User could not be authenticated';
         if (req.format === 'json') {
           return utils.send_json(req.keyless.context, 401, {
-            error: req.keyless.session.error
+            error: 'User could not be authenticated'
           });
         }
+        req.keyless.session.error = 'User could not be authenticated';
         return utils.redirect(req.keyless.context, keyless.config.url.login);
       }
       return utils.login_user(req.keyless.context, user, function(err) {
@@ -79,7 +79,6 @@
     if (req.query.ticket == null) {
       return next(new Error('Must provide a ticket to validate'));
     }
-    console.log(keyless.config.ticket_store);
     return keyless.config.ticket_store.get(req.query.ticket, function(err, user_id) {
       if (err != null) {
         return next(err);

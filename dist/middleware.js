@@ -30,15 +30,12 @@
   exports.keyless_user = function(keyless) {
     return function(req, res, next) {
       var invalid_token, _ref, _ref1;
-      console.log('KEYLESS: ' + req.method + ' ' + req.url);
-      console.log('KEYLESS: ' + require('util').inspect(require('underscore')(req.keyless.session).omit('cookie')));
       if (((_ref = req.keyless.session) != null ? _ref.passport : void 0) != null) {
         delete req.keyless.session.passport;
       }
       if (((_ref1 = req.keyless.session) != null ? _ref1.token : void 0) == null) {
         return next();
       }
-      console.log('KEYLESS: CHECKING TOKEN');
       invalid_token = function(err) {
         delete req.keyless.session.token;
         return next(err);
@@ -50,8 +47,6 @@
         if (token_data == null) {
           return invalid_token();
         }
-        console.log('KEYLESS: TOKEN DATA');
-        console.log(token_data);
         return keyless.passport.deserializeUser(token_data.user_id, function(err, user) {
           if (err != null) {
             return invalid_token(err);

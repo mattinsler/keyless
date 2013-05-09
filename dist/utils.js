@@ -67,7 +67,6 @@
   };
 
   exports.login_user = function(context, user, callback) {
-    console.log('KEYLESS: login_user');
     if (context.req.keyless.session.token != null) {
       context.req.keyless.user = user;
       return callback();
@@ -96,7 +95,6 @@
 
   exports.create_and_send_ticket = function(context) {
     var callback;
-    console.log('KEYLESS: create_and_send_ticket');
     callback = context.req.keyless.session.callback;
     delete context.req.keyless.session.callback;
     if (context.keyless.config.on_login != null) {
@@ -109,17 +107,22 @@
         redirect: exports.create_callback_url(context, callback)
       });
     }
-    return context.keyless.config.ticket_store.create(context.req.keyless.session.user, function(err, ticket) {
+    return context.keyless.passport.serializeUser(context.req.keyless.user, function(err, id) {
       if (err != null) {
         return context.next(err);
       }
-      try {
-        callback = exports.create_callback_url(context, callback, ticket);
-      } catch (err) {
-        exports.logout_user(context);
-        return exports.send_json(context, 403, err.message);
-      }
-      return exports.redirect(context, callback);
+      return context.keyless.config.ticket_store.create(id, function(err, ticket) {
+        if (err != null) {
+          return context.next(err);
+        }
+        try {
+          callback = exports.create_callback_url(context, callback, ticket);
+        } catch (err) {
+          exports.logout_user(context);
+          return exports.send_json(context, 403, err.message);
+        }
+        return exports.redirect(context, callback);
+      });
     });
   };
 

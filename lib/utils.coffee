@@ -45,7 +45,7 @@ exports.upgrade_to_ssl = (context) ->
   true
 
 exports.login_user = (context, user, callback) ->
-  console.log 'KEYLESS: login_user'
+  # console.log 'KEYLESS: login_user'
   
   if context.req.keyless.session.token?
     context.req.keyless.user = user
@@ -66,7 +66,7 @@ exports.logout_user = (context) ->
   delete context.req.keyless.session.token
 
 exports.create_and_send_ticket = (context) ->
-  console.log 'KEYLESS: create_and_send_ticket'
+  # console.log 'KEYLESS: create_and_send_ticket'
   
   callback = context.req.keyless.session.callback
   delete context.req.keyless.session.callback
@@ -74,15 +74,18 @@ exports.create_and_send_ticket = (context) ->
   
   return exports.send_json(context, 200, {redirect: exports.create_callback_url(context, callback)}) if context.req.format is 'json'
   
-  context.keyless.config.ticket_store.create context.req.keyless.session.user, (err, ticket) ->
+  context.keyless.passport.serializeUser context.req.keyless.user, (err, id) ->
     return context.next(err) if err?
     
-    try
-      callback = exports.create_callback_url(context, callback, ticket)
-    catch err
-      exports.logout_user(context)
-      return exports.send_json(context, 403, err.message)
-    exports.redirect(context, callback)
+    context.keyless.config.ticket_store.create id, (err, ticket) ->
+      return context.next(err) if err?
+    
+      try
+        callback = exports.create_callback_url(context, callback, ticket)
+      catch err
+        exports.logout_user(context)
+        return exports.send_json(context, 403, err.message)
+      exports.redirect(context, callback)
 
 exports.authorize_shared_key = (context) ->
   shared_key = context.req.headers[context.keyless.config.shared_key_header]

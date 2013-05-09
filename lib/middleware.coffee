@@ -37,12 +37,12 @@ exports.keyless_cookie = require './keyless_cookie'
 
 exports.keyless_user = (keyless) ->
   (req, res, next) ->
-    console.log 'KEYLESS: ' + req.method + ' ' + req.url
-    console.log 'KEYLESS: ' + require('util').inspect(require('underscore')(req.keyless.session).omit('cookie'))
+    # console.log 'KEYLESS: ' + req.method + ' ' + req.url
+    # console.log 'KEYLESS: ' + require('util').inspect(require('underscore')(req.keyless.session).omit('cookie'))
     delete req.keyless.session.passport if req.keyless.session?.passport?
     return next() unless req.keyless.session?.token?
     
-    console.log 'KEYLESS: CHECKING TOKEN'
+    # console.log 'KEYLESS: CHECKING TOKEN'
     
     invalid_token = (err) ->
       delete req.keyless.session.token
@@ -52,8 +52,8 @@ exports.keyless_user = (keyless) ->
       return invalid_token(err) if err?
       return invalid_token() unless token_data?
       
-      console.log 'KEYLESS: TOKEN DATA'
-      console.log token_data
+      # console.log 'KEYLESS: TOKEN DATA'
+      # console.log token_data
       
       keyless.passport.deserializeUser token_data.user_id, (err, user) ->
         return invalid_token(err) if err?
