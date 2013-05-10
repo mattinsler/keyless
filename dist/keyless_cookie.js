@@ -12,7 +12,7 @@
   module.exports = function(keyless) {
     return function(req, res, next) {
       var cookies, signed_cookies;
-      if (req.keyless.session != null) {
+      if (req.keyless.server.session != null) {
         return next();
       }
       cookies = req.headers.cookie;
@@ -26,11 +26,11 @@
         err.status = 400;
         return next(err);
       }
-      req.keyless.session = signed_cookies[keyless.config.session_key] || {};
-      if (typeof req.keyless.session !== 'object') {
-        req.keyless.session = {};
+      req.keyless.server.session = signed_cookies[keyless.config.session_key] || {};
+      if (typeof req.keyless.server.session !== 'object') {
+        req.keyless.server.session = {};
       }
-      req.keyless.session.cookie = new Cookie({
+      req.keyless.server.session.cookie = new Cookie({
         signed: true,
         httpOnly: true,
         path: '/',
@@ -39,13 +39,13 @@
       });
       res.on('header', function() {
         var cookie_value, json;
-        if (req.keyless.session == null) {
-          req.keyless.session.cookie.expires = new Date(0);
+        if (req.keyless.server.session == null) {
+          req.keyless.server.session.cookie.expires = new Date(0);
           res.setHeader('Set-Cookie', cookie.serialize(keyless.config.session_key, ''));
           return;
         }
-        delete req.keyless.session.cookie;
-        json = 'j:' + JSON.stringify(req.keyless.session);
+        delete req.keyless.server.session.cookie;
+        json = 'j:' + JSON.stringify(req.keyless.server.session);
         cookie_value = cookie.serialize(keyless.config.session_key, 's:' + signature.sign(json, keyless.config.session_secret));
         return res.setHeader('Set-Cookie', cookie_value);
       });

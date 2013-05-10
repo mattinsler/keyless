@@ -5,12 +5,12 @@ utils = require './utils'
 exports.fix_request = (keyless) ->
   (req, res, next) ->
     parsed = betturl.parse(req.url)
-    req.query = parsed.query
-    req.path = parsed.path
-    req.format = 'json' if /\.json$/.test(req.path) or req.headers.accept is 'application/json'
-    req.format ?= 'html'
-    req.resolved_protocol = req.get('x-forwarded-proto') ? req.protocol
-    req.full_url = req.resolved_protocol + '://' + req.get('host') + req.url
+    req.keyless.server.query = parsed.query
+    req.keyless.server.path = parsed.path
+    req.keyless.server.format = 'json' if /\.json$/.test(req.keyless.server.path) or req.headers.accept is 'application/json'
+    req.keyless.server.format ?= 'html'
+    req.keyless.server.resolved_protocol = req.get('x-forwarded-proto') ? req.protocol
+    req.keyless.server.full_url = req.keyless.server.resolved_protocol + '://' + req.get('host') + req.url
     next()
 
 exports.keyless_cookie = require './keyless_cookie'
@@ -22,11 +22,11 @@ exports.keyless_cookie = require './keyless_cookie'
 #     req._passport =
 #       instance: passport
 #     
-#     if req.keyless.session and req.keyless.session[passport._key]
-#       req._passport.session = req.keyless.session[passport._key]
-#     else if req.keyless.session
-#       req.keyless.session[passport._key] = {}
-#       req._passport.session = req.keyless.session[passport._key]
+#     if req.keyless.server.session and req.keyless.server.session[passport._key]
+#       req._passport.session = req.keyless.server.session[passport._key]
+#     else if req.keyless.server.session
+#       req.keyless.server.session[passport._key] = {}
+#       req._passport.session = req.keyless.server.session[passport._key]
 #     else
 #       req._passport.session = {}
 #     
@@ -38,17 +38,17 @@ exports.keyless_cookie = require './keyless_cookie'
 exports.keyless_user = (keyless) ->
   (req, res, next) ->
     # console.log 'KEYLESS: ' + req.method + ' ' + req.url
-    # console.log 'KEYLESS: ' + require('util').inspect(require('underscore')(req.keyless.session).omit('cookie'))
-    delete req.keyless.session.passport if req.keyless.session?.passport?
-    return next() unless req.keyless.session?.token?
+    # console.log 'KEYLESS: ' + require('util').inspect(require('underscore')(req.keyless.server.session).omit('cookie'))
+    delete req.keyless.server.session.passport if req.keyless.server.session?.passport?
+    return next() unless req.keyless.server.session?.token?
     
     # console.log 'KEYLESS: CHECKING TOKEN'
     
     invalid_token = (err) ->
-      delete req.keyless.session.token
+      delete req.keyless.server.session.token
       next(err)
     
-    keyless.config.token_store.get req.keyless.session.token, (err, token_data) ->
+    keyless.config.token_store.get req.keyless.server.session.token, (err, token_data) ->
       return invalid_token(err) if err?
       return invalid_token() unless token_data?
       
@@ -57,7 +57,7 @@ exports.keyless_user = (keyless) ->
       
       keyless.passport.deserializeUser token_data.user_id, (err, user) ->
         return invalid_token(err) if err?
-        utils.login_user req.keyless.context, user, (err) ->
+        utils.login_user req.keyless.server.context, user, (err) ->
           return invalid_token(err) if err?
           next()
 

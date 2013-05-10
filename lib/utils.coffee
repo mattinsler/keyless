@@ -25,7 +25,7 @@ exports.redirect = (context, to) ->
 
 exports.create_callback_url = (context, url, ticket) ->
   parsed = betturl.parse(url)
-  parsed.protocol ?= context.req.resolved_protocol
+  parsed.protocol ?= context.req.keyless.server.resolved_protocol
   [parsed.host, parsed.port] = context.req.get('host').split(':') unless parsed.host?
   delete parsed.port unless parsed.port?
   parsed.query.auth_ticket = ticket if ticket?
@@ -40,15 +40,15 @@ exports.create_callback_url = (context, url, ticket) ->
 
 exports.upgrade_to_ssl = (context) ->
   return false unless context.keyless.config.force_ssl is true
-  return false if context.req.resolved_protocol is 'https'
+  return false if context.req.keyless.server.resolved_protocol is 'https'
   exports.redirect(context, 'https://' + context.req.get('host') + context.req.url)
   true
 
 exports.login_user = (context, user, callback) ->
   # console.log 'KEYLESS: login_user'
   
-  if context.req.keyless.session.token?
-    context.req.keyless.user = user
+  if context.req.keyless.server.session.token?
+    context.req.keyless.server.user = user
     return callback()
   
   context.keyless.passport.serializeUser user, (err, id) ->
@@ -57,24 +57,24 @@ exports.login_user = (context, user, callback) ->
     context.keyless.config.token_store.create id, {type: 'web'}, (err, token) ->
       return callback(err) if err?
       
-      context.req.keyless.user = user
-      context.req.keyless.session.token = token
+      context.req.keyless.server.user = user
+      context.req.keyless.server.session.token = token
       callback()
 
 exports.logout_user = (context) ->
-  context.req.keyless.user = null
-  delete context.req.keyless.session.token
+  context.req.keyless.server.user = null
+  delete context.req.keyless.server.session.token
 
 exports.create_and_send_ticket = (context) ->
   # console.log 'KEYLESS: create_and_send_ticket'
   
-  callback = context.req.keyless.session.callback
-  delete context.req.keyless.session.callback
+  callback = context.req.keyless.server.session.callback
+  delete context.req.keyless.server.session.callback
   callback ?= context.keyless.config.on_login if context.keyless.config.on_login?
   
-  return exports.send_json(context, 200, {redirect: exports.create_callback_url(context, callback)}) if context.req.format is 'json'
+  return exports.send_json(context, 200, {redirect: exports.create_callback_url(context, callback)}) if context.req.keyless.server.format is 'json'
   
-  context.keyless.passport.serializeUser context.req.keyless.user, (err, id) ->
+  context.keyless.passport.serializeUser context.req.keyless.server.user, (err, id) ->
     return context.next(err) if err?
     
     context.keyless.config.ticket_store.create id, (err, ticket) ->

@@ -29,7 +29,7 @@
     var matches, parsed, _ref, _ref1;
     parsed = betturl.parse(url);
     if ((_ref = parsed.protocol) == null) {
-      parsed.protocol = context.req.resolved_protocol;
+      parsed.protocol = context.req.keyless.server.resolved_protocol;
     }
     if (parsed.host == null) {
       _ref1 = context.req.get('host').split(':'), parsed.host = _ref1[0], parsed.port = _ref1[1];
@@ -59,7 +59,7 @@
     if (context.keyless.config.force_ssl !== true) {
       return false;
     }
-    if (context.req.resolved_protocol === 'https') {
+    if (context.req.keyless.server.resolved_protocol === 'https') {
       return false;
     }
     exports.redirect(context, 'https://' + context.req.get('host') + context.req.url);
@@ -67,8 +67,8 @@
   };
 
   exports.login_user = function(context, user, callback) {
-    if (context.req.keyless.session.token != null) {
-      context.req.keyless.user = user;
+    if (context.req.keyless.server.session.token != null) {
+      context.req.keyless.server.user = user;
       return callback();
     }
     return context.keyless.passport.serializeUser(user, function(err, id) {
@@ -81,33 +81,33 @@
         if (err != null) {
           return callback(err);
         }
-        context.req.keyless.user = user;
-        context.req.keyless.session.token = token;
+        context.req.keyless.server.user = user;
+        context.req.keyless.server.session.token = token;
         return callback();
       });
     });
   };
 
   exports.logout_user = function(context) {
-    context.req.keyless.user = null;
-    return delete context.req.keyless.session.token;
+    context.req.keyless.server.user = null;
+    return delete context.req.keyless.server.session.token;
   };
 
   exports.create_and_send_ticket = function(context) {
     var callback;
-    callback = context.req.keyless.session.callback;
-    delete context.req.keyless.session.callback;
+    callback = context.req.keyless.server.session.callback;
+    delete context.req.keyless.server.session.callback;
     if (context.keyless.config.on_login != null) {
       if (callback == null) {
         callback = context.keyless.config.on_login;
       }
     }
-    if (context.req.format === 'json') {
+    if (context.req.keyless.server.format === 'json') {
       return exports.send_json(context, 200, {
         redirect: exports.create_callback_url(context, callback)
       });
     }
-    return context.keyless.passport.serializeUser(context.req.keyless.user, function(err, id) {
+    return context.keyless.passport.serializeUser(context.req.keyless.server.user, function(err, id) {
       if (err != null) {
         return context.next(err);
       }

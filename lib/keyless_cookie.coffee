@@ -5,7 +5,7 @@ connect_utils = require 'express/node_modules/connect/lib/utils'
 
 module.exports = (keyless) ->
   (req, res, next) ->
-    return next() if req.keyless.session?
+    return next() if req.keyless.server.session?
     
     cookies = req.headers.cookie
     return next() unless cookies?
@@ -16,11 +16,11 @@ module.exports = (keyless) ->
       err.status = 400
       return next(err)
     
-    req.keyless.session = signed_cookies[keyless.config.session_key] or {}
+    req.keyless.server.session = signed_cookies[keyless.config.session_key] or {}
     # Fix bad cookies just in case
-    req.keyless.session = {} if typeof req.keyless.session isnt 'object'
+    req.keyless.server.session = {} if typeof req.keyless.server.session isnt 'object'
     
-    req.keyless.session.cookie = new Cookie(
+    req.keyless.server.session.cookie = new Cookie(
       signed: true
       httpOnly: true
       path: '/'
@@ -29,14 +29,14 @@ module.exports = (keyless) ->
     )
     
     res.on 'header', ->
-      unless req.keyless.session?
-        req.keyless.session.cookie.expires = new Date(0)
+      unless req.keyless.server.session?
+        req.keyless.server.session.cookie.expires = new Date(0)
         res.setHeader('Set-Cookie', cookie.serialize(keyless.config.session_key, ''))
         return
       
-      delete req.keyless.session.cookie
+      delete req.keyless.server.session.cookie
       
-      json = 'j:' + JSON.stringify(req.keyless.session)
+      json = 'j:' + JSON.stringify(req.keyless.server.session)
       cookie_value = cookie.serialize(keyless.config.session_key, 's:' + signature.sign(json, keyless.config.session_secret))
       res.setHeader('Set-Cookie', cookie_value)
     

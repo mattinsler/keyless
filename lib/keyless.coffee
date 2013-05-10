@@ -49,12 +49,13 @@ class Keyless
   
   middleware: ->
     (req, res, next) =>
-      req.keyless =
-        context:
-          keyless: @
-          req: req
-          res: res
+      req.keyless ?= {}
+      req.keyless.server ?= {}
+      req.keyless.server.context =
+        keyless: @
+        req: req
+        res: res
       async.eachSeries @middleware_stack, (layer, cb) ->
-        req.keyless.context.next = cb
+        req.keyless.server.context.next = cb
         layer(req, res, cb)
       , next

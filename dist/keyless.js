@@ -70,15 +70,20 @@
     Keyless.prototype.middleware = function() {
       var _this = this;
       return function(req, res, next) {
-        req.keyless = {
-          context: {
-            keyless: _this,
-            req: req,
-            res: res
-          }
+        var _base, _ref, _ref1;
+        if ((_ref = req.keyless) == null) {
+          req.keyless = {};
+        }
+        if ((_ref1 = (_base = req.keyless).server) == null) {
+          _base.server = {};
+        }
+        req.keyless.server.context = {
+          keyless: _this,
+          req: req,
+          res: res
         };
         return async.eachSeries(_this.middleware_stack, function(layer, cb) {
-          req.keyless.context.next = cb;
+          req.keyless.server.context.next = cb;
           return layer(req, res, cb);
         }, next);
       };
