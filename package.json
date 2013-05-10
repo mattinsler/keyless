@@ -31,8 +31,8 @@
     "passport": "~0.1.16",
     "walkabout": "~0.1.4",
     "express": "~3.2.0",
-    "redis": "~0.8.3",
-    "passport-local": "~0.1.6"
+    "passport-local": "~0.1.6",
+    "redis-builder": "~0.8.3"
   },
   "devDependencies": {
     "mocha": "~1.7.0",

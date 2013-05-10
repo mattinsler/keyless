@@ -1,29 +1,9 @@
 crypto = require 'crypto'
-
-build_redis_client = (config = {}) ->
-  return config.client if config.client?
-  
-  url_config = require('url').parse(config.url) if config.url?
-  [url_username, url_password] = url_config.auth.split(':') if url_config?.auth?
-  
-  host = url_config?.hostname || config.host || 'localhost'
-  port = url_config?.port || config.port || 6379
-  database = url_config?.pathname.slice(1) || config.database
-  username = url_username || config.username
-  password = url_password || config.password
-  
-  client = require('redis').createClient(port, host)
-  client.auth(password) if password?
-  
-  if database?
-    throw new Error('Database must be an integer') unless parseInt(database).toString() is database.toString()
-    client.select(parseInt(database))
-  
-  client
+redis_builder = require 'redis-builder'
 
 class RedisTokenStore
   constructor: (opts = {}) ->
-    @client = build_redis_client(opts)
+    @client = redis_builder(opts)
     @prefix = opts.prefix ? 'keyless-t:'
     @expiration = opts.expiration ? (60 * 60 * 24)
   
@@ -43,8 +23,8 @@ class RedisTokenStore
     
     @client.multi()
       .setex(@prefix + key, @expiration, JSON.stringify(token_data))
-      .sadd(@prefix + ':u:' + user_id, key)
-      .expire(@prefix + ':u:' + user_id, @expiration)
+      .sadd(@prefix + 'u:' + user_id, key)
+      .expire(@prefix + 'u:' + user_id, @expiration)
       .exec (err) ->
         return callback(err) if err?
         callback(null, key)
@@ -53,9 +33,10 @@ class RedisTokenStore
     @client.multi()
       .get(@prefix + token, (err, token_data) =>
         return callback(err) if err?
+        return callback() unless token_data?
         try
           token_data = JSON.parse(token_data)
-          @client.expire(@prefix + ':u:' + token_data.user_id, @expiration)
+          @client.expire(@prefix + 'u:' + token_data.user_id, @expiration)
           callback(null, token_data)
         catch e
           callback(e)
@@ -68,7 +49,7 @@ class RedisTokenStore
       .get(@prefix + token, (err, token_data) =>
         try
           token_data = JSON.parse(token_data)
-          @client.srem(@prefix + ':u:' + token_data.user_id, token)
+          @client.srem(@prefix + 'u:' + token_data.user_id, token)
         catch e
       )
       .del(@prefix + token)
@@ -76,7 +57,7 @@ class RedisTokenStore
   
   remove_tokens_for_user: (user_id, callback) ->
     @client.multi()
-      .smembers(@prefix + ':u:' + user_id, (err, tokens) =>
+      .smembers(@prefix + 'u:' + user_id, (err, tokens) =>
         return callback(err) if err?
         return callback() unless tokens?.length > 0
         @client.del(tokens.map((t) => @prefix + t), callback)
