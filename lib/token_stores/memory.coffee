@@ -1,46 +1,52 @@
-crypto = require 'crypto'
+TokenStore = require '../token_store'
 
-class MemoryTokenStore
-  constructor: ->
+class MemoryTokenStore extends TokenStore
+  constructor: (opts = {}) ->
+    super
     @tokens = {}
     @tokens_by_data = {}
-    
-  create: (user_id, opts, callback) ->
-    if typeof opts is 'function'
-      callback = opts
-      opts = {}
-    
-    token_data =
-      user_id: user_id
-      opts: opts
-    
+
+  # optional callback
+  save: (token, token_data, callback) ->
     token_data_str = JSON.stringify(token_data)
-    return callback(null, @tokens_by_data[token_data_str]) if @tokens_by_data[token_data_str]?
-    
-    hash = crypto.createHash('sha256')
-    hash.update(crypto.randomBytes(16).toString('hex'))
-    hash.update(token_data_str)
-    key = hash.digest('hex')
     
     @tokens[key] = token_data
-    @tokens_by_data[token_data_str] = key
-    callback(null, key)
+    @tokens_by_data[token_data_str] = token
+    callback?()
   
   get: (token, callback) ->
+    callback(null, @tokens[token])
+
+  get_token_by_data: (token_data, callback) ->
+    callback(null, @tokens_by_data[JSON.stringify(token_data)])
+
+  get_tokens_by_user: (user_id, callback) ->
+    Object.keys(@tokens).filter (t) =>
+      return @tokens[t].user_id.toString() is user_id.toString()
+
+  # optional callback
+  remove: (token, callback) ->
     token_data = @tokens[token]
-    callback(null, token_data)
-  
-  remove_token: (token, callback) ->
-    token_data_str = JSON.stringify(@tokens[token])
+    return callback?() unless token_data?
+    token_data_str = JSON.stringify(token_data)
     delete @tokens[token]
     delete @tokens_by_data[token_data_str]
-    callback()
+    callback?()
+
+  # optional callback
+  remove_by_data: (token_data, callback) ->
+    token_data_str = JSON.stringify(token_data)
+    token = @tokens_by_data[token_data_str]
+    delete @tokens[token]
+    delete @tokens_by_data[token_data_str]
+    callback?()
   
-  remove_tokens_for_user: (user_id, callback) ->
-    Object.keys(@tokens).filter (k) =>
-      @tokens[k].user_id.toString() is user_id.toString()
-    .forEach (k) =>
-      @remove_token(k, ->)
+  # optional callback
+  remove_by_user: (user_id, callback) ->
+    Object.keys(@tokens).filter (t) =>
+      @tokens[t].user_id.toString() is user_id.toString()
+    .forEach (t) =>
+      @remove(t)
     callback()
 
 module.exports = (opts) -> new MemoryTokenStore(opts)

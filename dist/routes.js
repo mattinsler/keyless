@@ -86,7 +86,9 @@
       if (user_id == null) {
         return utils.send_json(req.keyless.server.context, 401, 'Unauthorized');
       }
-      return keyless.config.token_store.create(user_id, inflate_query_object(req.keyless.server.query), function(err, token) {
+      return keyless.config.token_store.create(user_id, {
+        type: 'web'
+      }, function(err, token) {
         if (err != null) {
           return next(err);
         }
@@ -149,7 +151,7 @@
       if (user_id == null) {
         return next();
       }
-      return keyless.config.token_store.remove_tokens_for_user(user_id, done);
+      return keyless.config.token_store.remove_by_user(user_id, done);
     });
   };
 

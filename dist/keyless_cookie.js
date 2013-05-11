@@ -1,7 +1,9 @@
 (function() {
-  var Cookie, connect_utils, cookie, signature;
+  var Cookie, connect_utils, cookie_util, crc32, signature;
 
-  cookie = require('express/node_modules/cookie');
+  crc32 = require('express/node_modules/buffer-crc32');
+
+  cookie_util = require('express/node_modules/cookie');
 
   Cookie = require('express/node_modules/connect/lib/middleware/session/cookie');
 
@@ -11,7 +13,7 @@
 
   module.exports = function(keyless) {
     return function(req, res, next) {
-      var cookies, signed_cookies;
+      var cookie, cookies, session_hash, signed_cookies;
       if (req.keyless.server.session != null) {
         return next();
       }
@@ -20,7 +22,7 @@
         return next();
       }
       try {
-        signed_cookies = connect_utils.parseSignedCookies(cookie.parse(cookies), keyless.config.session_secret);
+        signed_cookies = connect_utils.parseSignedCookies(cookie_util.parse(cookies), keyless.config.session_secret);
         signed_cookies = connect_utils.parseJSONCookies(signed_cookies);
       } catch (err) {
         err.status = 400;
@@ -30,23 +32,31 @@
       if (typeof req.keyless.server.session !== 'object') {
         req.keyless.server.session = {};
       }
-      req.keyless.server.session.cookie = new Cookie({
+      session_hash = crc32.signed(JSON.stringify(req.keyless.server.session));
+      cookie = req.keyless.server.session.cookie = new Cookie({
         signed: true,
         httpOnly: true,
         path: '/',
         maxAge: 1000 * 60 * 60 * 24,
         secure: keyless.config.force_ssl
       });
+      if (req.originalUrl.indexOf(cookie.path) !== 0) {
+        return next();
+      }
       res.on('header', function() {
-        var cookie_value, json;
+        var cookie_value, session_str;
         if (req.keyless.server.session == null) {
-          req.keyless.server.session.cookie.expires = new Date(0);
+          cookie.expires = new Date(0);
           res.setHeader('Set-Cookie', cookie.serialize(keyless.config.session_key, ''));
           return;
         }
         delete req.keyless.server.session.cookie;
-        json = 'j:' + JSON.stringify(req.keyless.server.session);
-        cookie_value = cookie.serialize(keyless.config.session_key, 's:' + signature.sign(json, keyless.config.session_secret));
+        session_str = JSON.stringify(req.keyless.server.session);
+        if (session_hash === crc32.signed(session_str)) {
+          return;
+        }
+        session_str = 'j:' + session_str;
+        cookie_value = cookie.serialize(keyless.config.session_key, 's:' + signature.sign(session_str, keyless.config.session_secret));
         return res.setHeader('Set-Cookie', cookie_value);
       });
       return next();

@@ -15,4 +15,23 @@ either
 - authorized_callback_domains (optional)
 
 
-keyless_error
+req.keyless.error
+
+
+### TokenStore
+
+#### Constructor
+Options
+- ttl
+
+#### store.create(user_id, opts, callback)
+Options
+- ttl
+
+#### store.get(token, callback)
+#### store.get_token_by_data(token_data, callback)
+#### store.get_tokens_by_user(user_id, callback)
+#### store.remove(token, callback)
+#### store.remove_by_data(token_data, callback)
+#### store.remove_by_user(user_id, callback)
+#### store.update_token_opts(token, opts, callback)

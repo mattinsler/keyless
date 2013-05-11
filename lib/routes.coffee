@@ -51,7 +51,7 @@ exports.validate_ticket = (keyless, req, res, next) ->
     return next(err) if err?
     return utils.send_json(req.keyless.server.context, 401, 'Unauthorized') unless user_id?
 
-    keyless.config.token_store.create user_id, inflate_query_object(req.keyless.server.query), (err, token) ->
+    keyless.config.token_store.create user_id, {type: 'web'}, (err, token) ->
       return next(err) if err?
       utils.send_json(req.keyless.server.context, 200, {token: token})
 
@@ -82,4 +82,4 @@ exports.logout = (keyless, req, res, next) ->
     utils.logout_user(req.keyless.server.context)
     return next(err) if err?
     return next() unless user_id?
-    keyless.config.token_store.remove_tokens_for_user(user_id, done)
+    keyless.config.token_store.remove_by_user(user_id, done)

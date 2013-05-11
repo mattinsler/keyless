@@ -1,13 +1,15 @@
 crypto = require 'crypto'
 
 class TokenStore
-  constructor: ->
-    
+  constructor: (opts) ->
+    @ttl = opts.ttl or (60 * 60 * 24)
   
   create: (user_id, opts, callback) ->
     if typeof opts is 'function'
       callback = opts
       opts = {}
+    
+    opts.ttl ?= @ttl
     
     token_data =
       user_id: user_id
@@ -26,24 +28,43 @@ class TokenStore
         return callback(err) if err?
         callback(null, token)
   
+  # optional callback
+  update_token_opts: (token, opts, callback) ->
+    @get token, {extend_ttl: false}, (err, token_data) =>
+      return callback?(err) if err?
+      return callback?() unless token_data?
+      
+      opts.ttl ?= @ttl
+      token_data.opts = opts
+      
+      @save token, token_data, (err) ->
+        return callback?(err) if err?
+        callback?()
+  
+  # optional callback
   save: (token, token_data, callback) ->
     throw new Error('token store must implement save')
   
-  get: (token, callback) ->
+  # opts (optional):
+  # - extend_ttl: true|false
+  get: (token, opts, callback) ->
     throw new Error('token store must implement get')
   
-  get_token_by_data: (token_data_str, callback) ->
+  get_token_by_data: (token_data, callback) ->
     throw new Error('token store must implement get_token_by_data')
   
   get_tokens_by_user: (user_id, callback) ->
     throw new Error('token store must implement get_tokens_by_user')
   
+  # optional callback
   remove: (token, callback) ->
     throw new Error('token store must implement remove')
   
+  # optional callback
   remove_by_data: (token_data, callback) ->
     throw new Error('token store must implement remove_by_data')
   
+  # optional callback
   remove_by_user: (user_id, callback) ->
     throw new Error('token store must implement remove_by_user')
 
