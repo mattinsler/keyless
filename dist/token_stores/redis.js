@@ -158,7 +158,7 @@
           if (typeof callback === "function") {
             callback(err);
           }
-          return this.client.del(this.prefix + 'u:' + user_id, function() {});
+          return _this.client.del(_this.prefix + 'u:' + user_id, function() {});
         });
       });
     };

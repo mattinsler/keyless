@@ -122,7 +122,7 @@ class RedisTokenStore extends TokenStore
       return callback() unless tokens?
       async.each tokens, (token, cb) =>
         @remove(token, cb)
-      , (err) ->
+      , (err) =>
         callback?(err)
         # delete the list just in case
         @client.del(@prefix + 'u:' + user_id, ->)
