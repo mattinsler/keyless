@@ -2,10 +2,15 @@ betturl = require 'betturl'
 
 utils = require './utils'
 
+get_callback_from_querystring = (keyless, req) ->
+  for k in keyless.config.querystring_callback_params
+    return decodeURIComponent(req.keyless.server.query[k]) if req.keyless.server.query[k]?
+
 exports.get_login = (keyless, req, res, next) ->
   return if utils.upgrade_to_ssl(req.keyless.server.context)
   
-  req.keyless.server.session.callback = req.keyless.server.query.callback if req.keyless.server.query.callback?
+  new_callback = get_callback_from_querystring(keyless, req)
+  req.keyless.server.session.callback = new_callback if new_callback?
   return utils.create_and_send_ticket(req.keyless.server.context) if req.keyless.server.user?
 
   if keyless.config.defer_login_url?
@@ -74,7 +79,8 @@ exports.validate_token = (keyless, req, res, next) ->
 
 exports.logout = (keyless, req, res, next) ->
   done = ->
-    return utils.redirect(req.keyless.server.context, decodeURIComponent(req.keyless.server.query.callback)) if req.keyless.server.query.callback?
+    callback = get_callback_from_querystring(keyless, req)
+    return utils.redirect(req.keyless.server.context, callback) if callback?
     utils.redirect(req.keyless.server.context, keyless.config.url.login)
 
   return done() unless req.keyless.server.user?

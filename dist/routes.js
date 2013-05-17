@@ -1,17 +1,29 @@
 (function() {
-  var betturl, inflate_query_object, utils;
+  var betturl, get_callback_from_querystring, inflate_query_object, utils;
 
   betturl = require('betturl');
 
   utils = require('./utils');
 
+  get_callback_from_querystring = function(keyless, req) {
+    var k, _i, _len, _ref;
+    _ref = keyless.config.querystring_callback_params;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      k = _ref[_i];
+      if (req.keyless.server.query[k] != null) {
+        return decodeURIComponent(req.keyless.server.query[k]);
+      }
+    }
+  };
+
   exports.get_login = function(keyless, req, res, next) {
-    var parsed, prefix;
+    var new_callback, parsed, prefix;
     if (utils.upgrade_to_ssl(req.keyless.server.context)) {
       return;
     }
-    if (req.keyless.server.query.callback != null) {
-      req.keyless.server.session.callback = req.keyless.server.query.callback;
+    new_callback = get_callback_from_querystring(keyless, req);
+    if (new_callback != null) {
+      req.keyless.server.session.callback = new_callback;
     }
     if (req.keyless.server.user != null) {
       return utils.create_and_send_ticket(req.keyless.server.context);
@@ -135,8 +147,10 @@
   exports.logout = function(keyless, req, res, next) {
     var done;
     done = function() {
-      if (req.keyless.server.query.callback != null) {
-        return utils.redirect(req.keyless.server.context, decodeURIComponent(req.keyless.server.query.callback));
+      var callback;
+      callback = get_callback_from_querystring(keyless, req);
+      if (callback != null) {
+        return utils.redirect(req.keyless.server.context, callback);
       }
       return utils.redirect(req.keyless.server.context, keyless.config.url.login);
     };

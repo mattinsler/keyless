@@ -13,6 +13,7 @@ either
 - force_ssl (defaults to `true` when NODE_ENV is `production`)
 - session_store (optional)
 - authorized_callback_domains (optional)
+- querystring_callback_params (optional)
 
 
 req.keyless.error

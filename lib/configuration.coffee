@@ -23,6 +23,9 @@ module.exports = (opts) ->
   config.authorized_callback_domains = opts.authorized_callback_domains ? [/.*/]
   config.authorized_callback_domains = [config.authorized_callback_domains] unless Array.isArray(config.authorized_callback_domains)
   
+  config.querystring_callback_params ?= ['callback']
+  config.querystring_callback_params = [config.querystring_callback_params] unless Array.isArray(config.querystring_callback_params)
+  
   config.on_login = opts.on_login
   
   config.ticket_store = opts.ticket_store
