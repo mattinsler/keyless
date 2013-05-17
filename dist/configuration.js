@@ -29,6 +29,9 @@
     if ((_ref7 = config.querystring_callback_params) == null) {
       config.querystring_callback_params = ['callback'];
     }
+    if (!Array.isArray(config.querystring_callback_params)) {
+      config.querystring_callback_params = [config.querystring_callback_params];
+    }
     config.on_login = opts.on_login;
     config.ticket_store = opts.ticket_store;
     config.token_store = opts.token_store;
