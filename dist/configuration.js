@@ -6,7 +6,7 @@
   walkabout = require('walkabout');
 
   module.exports = function(opts) {
-    var config, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7;
+    var config, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
     config = {};
     config.url = {
       root: (_ref = opts.root_url) != null ? _ref : '/'
@@ -26,9 +26,7 @@
     if (!Array.isArray(config.authorized_callback_domains)) {
       config.authorized_callback_domains = [config.authorized_callback_domains];
     }
-    if ((_ref7 = config.querystring_callback_params) == null) {
-      config.querystring_callback_params = ['callback'];
-    }
+    config.querystring_callback_params = opts.querystring_callback_params || ['callback'];
     if (!Array.isArray(config.querystring_callback_params)) {
       config.querystring_callback_params = [config.querystring_callback_params];
     }
