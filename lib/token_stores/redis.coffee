@@ -19,12 +19,10 @@ class RedisTokenStore extends TokenStore
       multi = multi
         .persist(@prefix + token)
         .persist(@prefix + 'd:' + token_data_str)
-        .persist(@prefix + 'u:' + token_data.user_id)
     else
       multi = multi
         .expire(@prefix + token, ttl)
         .expire(@prefix + 'd:' + token_data_str, ttl)
-        .expire(@prefix + 'u:' + token_data.user_id, ttl)
     
     multi.exec (err) ->
       callback?(err)
@@ -36,17 +34,17 @@ class RedisTokenStore extends TokenStore
     
     multi = @client.multi()
       .sadd(@prefix + 'u:' + token_data.user_id, token)
+      # Don't really need to persist here, but this will recover from prior mistakes
+      .persist(@prefix + 'u:' + token_data.user_id)
     
     if ttl is -1
       multi = multi
         .set(@prefix + token, token_data_str)
         .set(@prefix + 'd:' + token_data_str, token)
-        .persist(@prefix + 'u:' + token_data.user_id)
     else
       multi = multi
         .setex(@prefix + token, ttl, token_data_str)
         .setex(@prefix + 'd:' + token_data_str, ttl, token)
-        .expire(@prefix + 'u:' + token_data.user_id, ttl)
     
     multi.exec (err) ->
       callback?(err)

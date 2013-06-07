@@ -32,9 +32,9 @@
       ttl = token_data.opts.ttl || this.ttl;
       multi = this.client.multi();
       if (ttl === -1) {
-        multi = multi.persist(this.prefix + token).persist(this.prefix + 'd:' + token_data_str).persist(this.prefix + 'u:' + token_data.user_id);
+        multi = multi.persist(this.prefix + token).persist(this.prefix + 'd:' + token_data_str);
       } else {
-        multi = multi.expire(this.prefix + token, ttl).expire(this.prefix + 'd:' + token_data_str, ttl).expire(this.prefix + 'u:' + token_data.user_id, ttl);
+        multi = multi.expire(this.prefix + token, ttl).expire(this.prefix + 'd:' + token_data_str, ttl);
       }
       return multi.exec(function(err) {
         return typeof callback === "function" ? callback(err) : void 0;
@@ -45,11 +45,11 @@
       var multi, token_data_str, ttl;
       ttl = token_data.opts.ttl;
       token_data_str = JSON.stringify(token_data);
-      multi = this.client.multi().sadd(this.prefix + 'u:' + token_data.user_id, token);
+      multi = this.client.multi().sadd(this.prefix + 'u:' + token_data.user_id, token).persist(this.prefix + 'u:' + token_data.user_id);
       if (ttl === -1) {
-        multi = multi.set(this.prefix + token, token_data_str).set(this.prefix + 'd:' + token_data_str, token).persist(this.prefix + 'u:' + token_data.user_id);
+        multi = multi.set(this.prefix + token, token_data_str).set(this.prefix + 'd:' + token_data_str, token);
       } else {
-        multi = multi.setex(this.prefix + token, ttl, token_data_str).setex(this.prefix + 'd:' + token_data_str, ttl, token).expire(this.prefix + 'u:' + token_data.user_id, ttl);
+        multi = multi.setex(this.prefix + token, ttl, token_data_str).setex(this.prefix + 'd:' + token_data_str, ttl, token);
       }
       return multi.exec(function(err) {
         return typeof callback === "function" ? callback(err) : void 0;
