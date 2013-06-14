@@ -19,7 +19,7 @@ exports.get_login = (keyless, req, res, next) ->
     parsed.path = keyless.config.defer_login_url
     req.url = betturl.format(parsed).slice(prefix.length)
 
-    req.keyless.servererror = req.keyless.server.session.error
+    req.keyless.server.error = req.keyless.server.session.error
     delete req.keyless.server.session.error
     return next()
 
@@ -88,4 +88,4 @@ exports.logout = (keyless, req, res, next) ->
     utils.logout_user(req.keyless.server.context)
     return next(err) if err?
     return next() unless user_id?
-    keyless.config.token_store.remove_by_user(user_id, done)
+    keyless.config.token_store.remove_by_user_type(user_id, 'web', done)

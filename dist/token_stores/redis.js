@@ -128,6 +128,33 @@
       });
     };
 
+    RedisTokenStore.prototype.remove_if = function(token, predicate, callback) {
+      var do_remove,
+        _this = this;
+      do_remove = function(token, token_data_str) {
+        var token_data;
+        try {
+          if (token_data_str != null) {
+            token_data = JSON.parse(token_data_str);
+          }
+        } catch (e) {
+
+        }
+        if (!predicate(token_data)) {
+          return callback();
+        }
+        return _this.client.multi().del([_this.prefix + token, _this.prefix + 'd:' + token_data_str]).srem(_this.prefix + 'u:' + token_data.user_id, token).exec(function(err) {
+          return typeof callback === "function" ? callback(err) : void 0;
+        });
+      };
+      return this._get_token_data_str(token, function(err, token_data_str) {
+        if (err != null) {
+          return callback(err);
+        }
+        return do_remove(token, token_data_str);
+      });
+    };
+
     RedisTokenStore.prototype.remove_by_data = function(token_data, callback) {
       var token_data_str,
         _this = this;
@@ -140,6 +167,27 @@
           return callback();
         }
         return _this.remove(token, token_data_str, callback);
+      });
+    };
+
+    RedisTokenStore.prototype.remove_by_user_type = function(user_id, type, callback) {
+      var predicate,
+        _this = this;
+      predicate = function(token_data) {
+        return token_data.opts.type === type;
+      };
+      return this.client.smembers(this.prefix + 'u:' + user_id, function(err, tokens) {
+        if (err != null) {
+          return callback(err);
+        }
+        if (tokens == null) {
+          return callback();
+        }
+        return async.each(tokens, function(token, cb) {
+          return _this.remove_if(token, predicate, cb);
+        }, function(err) {
+          return typeof callback === "function" ? callback(err) : void 0;
+        });
       });
     };
 

@@ -67,5 +67,9 @@ class TokenStore
   # optional callback
   remove_by_user: (user_id, callback) ->
     throw new Error('token store must implement remove_by_user')
+  
+  # optional callback
+  remove_by_user_type: (user_id, type, callback) ->
+    throw new Error('token store must implement remove_by_user_type')
 
 module.exports = TokenStore

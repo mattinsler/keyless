@@ -33,7 +33,7 @@
       parsed = betturl.parse(prefix + req.url);
       parsed.path = keyless.config.defer_login_url;
       req.url = betturl.format(parsed).slice(prefix.length);
-      req.keyless.servererror = req.keyless.server.session.error;
+      req.keyless.server.error = req.keyless.server.session.error;
       delete req.keyless.server.session.error;
       return next();
     }
@@ -165,7 +165,7 @@
       if (user_id == null) {
         return next();
       }
-      return keyless.config.token_store.remove_by_user(user_id, done);
+      return keyless.config.token_store.remove_by_user_type(user_id, 'web', done);
     });
   };
 

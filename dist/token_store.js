@@ -97,6 +97,10 @@
       throw new Error('token store must implement remove_by_user');
     };
 
+    TokenStore.prototype.remove_by_user_type = function(user_id, type, callback) {
+      throw new Error('token store must implement remove_by_user_type');
+    };
+
     return TokenStore;
 
   })();

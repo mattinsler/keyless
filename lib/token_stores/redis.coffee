@@ -106,12 +106,47 @@ class RedisTokenStore extends TokenStore
       do_remove(token, token_data_str)
   
   # optional callback
+  remove_if: (token, predicate, callback) ->
+    do_remove = (token, token_data_str) =>
+      try
+        token_data = JSON.parse(token_data_str) if token_data_str?
+      catch e
+      
+      return callback() unless predicate(token_data)
+      
+      @client.multi()
+        .del([
+          @prefix + token,
+          @prefix + 'd:' + token_data_str
+        ])
+        .srem(@prefix + 'u:' + token_data.user_id, token)
+        .exec (err) ->
+          callback?(err)
+    
+    @_get_token_data_str token, (err, token_data_str) ->
+      return callback(err) if err?
+      do_remove(token, token_data_str)
+  
+  # optional callback
   remove_by_data: (token_data, callback) ->
     token_data_str = JSON.stringify(token_data)
     @get_token_by_data token_data, (err, token) =>
       return callback(err) if err?
       return callback() unless token?
       @remove(token, token_data_str, callback)
+  
+  # optional callback
+  remove_by_user_type: (user_id, type, callback) ->
+    predicate = (token_data) ->
+      token_data.opts.type is type
+    
+    @client.smembers @prefix + 'u:' + user_id, (err, tokens) =>
+      return callback(err) if err?
+      return callback() unless tokens?
+      async.each tokens, (token, cb) =>
+        @remove_if(token, predicate, cb)
+      , (err) =>
+        callback?(err)
   
   # optional callback
   remove_by_user: (user_id, callback) ->
