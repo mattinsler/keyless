@@ -99,7 +99,7 @@
         token_data_str = null;
       }
       do_remove = function(token, token_data_str) {
-        var token_data;
+        var multi, token_data;
         try {
           if (token_data_str != null) {
             token_data = JSON.parse(token_data_str);
@@ -107,15 +107,13 @@
         } catch (e) {
 
         }
+        multi = _this.client.multi().del([_this.prefix + token, _this.prefix + 'd:' + token_data_str]);
         if ((token_data != null ? token_data.user_id : void 0) != null) {
-          return _this.client.multi().del([_this.prefix + token, _this.prefix + 'd:' + token_data_str]).srem(_this.prefix + 'u:' + token_data.user_id, token).exec(function(err) {
-            return typeof callback === "function" ? callback(err) : void 0;
-          });
-        } else {
-          return _this.client.del([_this.prefix + token, _this.prefix + 'd:' + token_data_str], function(err) {
-            return typeof callback === "function" ? callback(err) : void 0;
-          });
+          multi = multi.srem(_this.prefix + 'u:' + token_data.user_id, token);
         }
+        return multi.exec(function(err) {
+          return typeof callback === "function" ? callback(err) : void 0;
+        });
       };
       if (token_data_str != null) {
         return do_remove(token, token_data_str);
@@ -132,18 +130,22 @@
       var do_remove,
         _this = this;
       do_remove = function(token, token_data_str) {
-        var token_data;
+        var multi, token_data;
         try {
           if (token_data_str != null) {
             token_data = JSON.parse(token_data_str);
           }
         } catch (e) {
-
+          console.log(e.stack);
         }
         if (!predicate(token_data)) {
           return callback();
         }
-        return _this.client.multi().del([_this.prefix + token, _this.prefix + 'd:' + token_data_str]).srem(_this.prefix + 'u:' + token_data.user_id, token).exec(function(err) {
+        multi = _this.client.multi().del([_this.prefix + token, _this.prefix + 'd:' + token_data_str]);
+        if ((token_data != null ? token_data.user_id : void 0) != null) {
+          multi = multi.srem(_this.prefix + 'u:' + token_data.user_id, token);
+        }
+        return multi.exec(function(err) {
           return typeof callback === "function" ? callback(err) : void 0;
         });
       };
@@ -174,7 +176,8 @@
       var predicate,
         _this = this;
       predicate = function(token_data) {
-        return token_data.opts.type === type;
+        var _ref;
+        return !(token_data != null) || ((_ref = token_data.opts) != null ? _ref.type : void 0) === type;
       };
       return this.client.smembers(this.prefix + 'u:' + user_id, function(err, tokens) {
         if (err != null) {

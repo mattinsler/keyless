@@ -83,21 +83,13 @@ class RedisTokenStore extends TokenStore
         token_data = JSON.parse(token_data_str) if token_data_str?
       catch e
       
-      if token_data?.user_id?
-        @client.multi()
-          .del([
-            @prefix + token,
-            @prefix + 'd:' + token_data_str
-          ])
-          .srem(@prefix + 'u:' + token_data.user_id, token)
-          .exec (err) ->
-            callback?(err)
-      else
-        @client.del [
-          @prefix + token,
-          @prefix + 'd:' + token_data_str
-        ], (err) ->
-          callback?(err)
+      multi = @client.multi().del([
+        @prefix + token,
+        @prefix + 'd:' + token_data_str
+      ])
+      multi = multi.srem(@prefix + 'u:' + token_data.user_id, token) if token_data?.user_id?
+      multi.exec (err) ->
+        callback?(err)
     
     return do_remove(token, token_data_str) if token_data_str?
     
@@ -111,17 +103,17 @@ class RedisTokenStore extends TokenStore
       try
         token_data = JSON.parse(token_data_str) if token_data_str?
       catch e
+        console.log e.stack
       
       return callback() unless predicate(token_data)
       
-      @client.multi()
-        .del([
-          @prefix + token,
-          @prefix + 'd:' + token_data_str
-        ])
-        .srem(@prefix + 'u:' + token_data.user_id, token)
-        .exec (err) ->
-          callback?(err)
+      multi = @client.multi().del([
+        @prefix + token,
+        @prefix + 'd:' + token_data_str
+      ])
+      multi = multi.srem(@prefix + 'u:' + token_data.user_id, token) if token_data?.user_id?
+      multi.exec (err) ->
+        callback?(err)
     
     @_get_token_data_str token, (err, token_data_str) ->
       return callback(err) if err?
@@ -138,7 +130,7 @@ class RedisTokenStore extends TokenStore
   # optional callback
   remove_by_user_type: (user_id, type, callback) ->
     predicate = (token_data) ->
-      token_data.opts.type is type
+      !token_data? or token_data.opts?.type is type
     
     @client.smembers @prefix + 'u:' + user_id, (err, tokens) =>
       return callback(err) if err?
