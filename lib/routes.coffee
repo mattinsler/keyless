@@ -18,9 +18,10 @@ exports.get_login = (keyless, req, res, next) ->
     parsed = betturl.parse(prefix + req.url)
     parsed.path = keyless.config.defer_login_url
     req.url = betturl.format(parsed).slice(prefix.length)
-
-    req.keyless.server.error = req.keyless.server.session.error
-    delete req.keyless.server.session.error
+    
+    if req.keyless.server.session?.error?
+      req.keyless.server.error = req.keyless.server.session.error
+      delete req.keyless.server.session.error
     return next()
 
   utils.send_html(req.keyless.server.context, 200, keyless.config.login_html)

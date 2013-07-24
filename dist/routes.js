@@ -17,7 +17,7 @@
   };
 
   exports.get_login = function(keyless, req, res, next) {
-    var new_callback, parsed, prefix;
+    var new_callback, parsed, prefix, _ref;
     if (utils.upgrade_to_ssl(req.keyless.server.context)) {
       return;
     }
@@ -33,8 +33,10 @@
       parsed = betturl.parse(prefix + req.url);
       parsed.path = keyless.config.defer_login_url;
       req.url = betturl.format(parsed).slice(prefix.length);
-      req.keyless.server.error = req.keyless.server.session.error;
-      delete req.keyless.server.session.error;
+      if (((_ref = req.keyless.server.session) != null ? _ref.error : void 0) != null) {
+        req.keyless.server.error = req.keyless.server.session.error;
+        delete req.keyless.server.session.error;
+      }
       return next();
     }
     return utils.send_html(req.keyless.server.context, 200, keyless.config.login_html);
