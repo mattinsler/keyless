@@ -9,15 +9,15 @@ module.exports = (keyless) ->
     return next() if req.keyless.server.session?
     
     cookies = req.headers.cookie
-    return next() unless cookies?
-    try
-      signed_cookies = connect_utils.parseSignedCookies(cookie_util.parse(cookies), keyless.config.session_secret)
-      signed_cookies = connect_utils.parseJSONCookies(signed_cookies)
-    catch err
-      err.status = 400
-      return next(err)
+    if cookies?
+      try
+        signed_cookies = connect_utils.parseSignedCookies(cookie_util.parse(cookies), keyless.config.session_secret)
+        signed_cookies = connect_utils.parseJSONCookies(signed_cookies)
+      catch err
+        err.status = 400
+        return next(err)
     
-    req.keyless.server.session = signed_cookies[keyless.config.session_key] or {}
+    req.keyless.server.session = signed_cookies?[keyless.config.session_key] or {}
     # Fix bad sessions just in case
     req.keyless.server.session = {} if typeof req.keyless.server.session isnt 'object'
     session_hash = crc32.signed(JSON.stringify(req.keyless.server.session))

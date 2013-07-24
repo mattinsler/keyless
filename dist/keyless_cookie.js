@@ -18,17 +18,16 @@
         return next();
       }
       cookies = req.headers.cookie;
-      if (cookies == null) {
-        return next();
+      if (cookies != null) {
+        try {
+          signed_cookies = connect_utils.parseSignedCookies(cookie_util.parse(cookies), keyless.config.session_secret);
+          signed_cookies = connect_utils.parseJSONCookies(signed_cookies);
+        } catch (err) {
+          err.status = 400;
+          return next(err);
+        }
       }
-      try {
-        signed_cookies = connect_utils.parseSignedCookies(cookie_util.parse(cookies), keyless.config.session_secret);
-        signed_cookies = connect_utils.parseJSONCookies(signed_cookies);
-      } catch (err) {
-        err.status = 400;
-        return next(err);
-      }
-      req.keyless.server.session = signed_cookies[keyless.config.session_key] || {};
+      req.keyless.server.session = (signed_cookies != null ? signed_cookies[keyless.config.session_key] : void 0) || {};
       if (typeof req.keyless.server.session !== 'object') {
         req.keyless.server.session = {};
       }
